@@ -51,7 +51,7 @@ so the three surfaces cannot disagree.
 | 0 | Success. |
 | 1 | The instance answered and refused (unknown command, bad id, …). |
 | 2 | The command line was wrong. |
-| 3 | No running instance. |
+| 3 | No running instance — **or several**: the message then lists them; pick one with `--instance <pid\|:port>` or `UNLIM_API_PORT`. |
 | 4 | An instance is recorded but did not answer. |
 
 ### drop
@@ -83,7 +83,7 @@ A path that does not exist is rejected before the offer goes out.
 | `--vip-key <k>` | Request a custom key. It is still the credential that grants access — make it unguessable; a short or memorable value is brute-forceable. |
 | `--daemon` | Headless: serve the JSON API and nothing else. |
 | `--no-api` | Do NOT serve the local API alongside this run. Subcommands then cannot reach it. |
-| `--allow-multiple` | Bypass the single-instance lock. **Local testing only.** |
+| `--allow-multiple` | Deprecated no-op — since 1.5.82 concurrent instances need no flag. |
 
 `-S` takes its own arguments *after* it: `-t <name>`, `-d`/`--detach`,
 `--share`/`--local`/`--no-share`, then `--` and the program. Putting them before
@@ -169,8 +169,10 @@ The port actually bound is recorded in `~/.unlimited/api_endpoint` (mode 0600):
 
 Read that rather than assuming 9800 — 9800 may be taken, in which case the
 instance binds elsewhere and says so on stderr. `UNLIM_API_PORT` overrides.
-Only ONE instance claims the record: a second one (`--allow-multiple`, local
-testing) leaves it alone and prints its own port instead.
+Since 1.5.82 several instances can run at once: each one registers
+`~/.unlimited/instances/<pid>.json` (`unlim instances` lists the live ones),
+while the single `api_endpoint` record is claimed by whoever got port 9800 —
+or by a sole instance on a fallback port.
 
 ```bash
 unlim --now 3000 --no-tui &
@@ -185,12 +187,14 @@ API **refuses to start** rather than serving unauthenticated.
 Every response is `{"ok":true,"data":…}` or `{"ok":false,"error":"…"}`.
 A request with no token gets `401`; from a non-loopback address, `403`.
 
-**One instance per machine.** `unlim` holds a PID lock, so starting a second one
-fails with `already running (PID n)` — including against the desktop app's core,
-which runs `--ipc` and does **not** listen on 9800. Do not answer that by
-starting a daemon: whatever is already running serves the API itself, so use it.
-If the launcher owns the process its API is private and unreachable; report that
-rather than retrying.
+**Several instances are fine (1.5.82+).** There is no single-instance lock —
+a second `unlim` starts alongside the first and registers itself. When more
+than one is live a plain `unlim <verb>` refuses to guess (exit 3, with the
+list); select with `--instance <pid|:port>` or `UNLIM_API_PORT`. The desktop
+app's core is the exception that looks like nothing: it runs `--ipc`, whose
+API is private to the launcher, so it never registers and never claims
+`api_endpoint` — to these tools it is simply invisible, and starting a daemon
+next to it works.
 
 **Starting is asynchronous.** `/api/now` and `/api/connect` return
 `{"ok":true,"data":["..."]}` immediately; `mode` goes `starting` → `server` /

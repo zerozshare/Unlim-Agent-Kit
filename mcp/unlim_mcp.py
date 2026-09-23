@@ -111,10 +111,11 @@ def _start_daemon(timeout=25.0):
         if _daemon_alive():
             return _endpoint()
         if _daemon.poll() is not None:
-            # `unlim` holds a machine-wide PID lock, so --daemon refuses to start
-            # while ANY instance is up — including the desktop app's core, which
-            # runs --ipc and does NOT listen on 9800. A dead 9800 therefore does
-            # not mean "nothing is running"; say which it is instead of retrying.
+            # Cores BEFORE 1.5.82 held a machine-wide PID lock, so --daemon
+            # refused to start while ANY instance was up — including the
+            # desktop app's core, which runs --ipc and does NOT listen on
+            # 9800. 1.5.82+ has no lock and never lands here; keep the branch
+            # so an old core gets a clear message instead of a retry loop.
             err = ""
             try:
                 err = (_daemon.stderr.read() or b"").decode(errors="replace")[:300]
@@ -122,9 +123,10 @@ def _start_daemon(timeout=25.0):
                 pass
             if "already running" in err:
                 raise RuntimeError(
-                    "another unlim instance owns this machine (probably the desktop app). "
-                    "It runs --ipc, whose API is private to the launcher, so these tools "
-                    "cannot reach it — quit the Unlim app, or drive that instance instead. "
+                    "another unlim instance owns this machine (probably the desktop app) "
+                    "and the core is older than 1.5.82, when the single-instance lock "
+                    "was removed. Update unlim — or drive the running instance instead "
+                    "with UNLIM_API_PORT (see `unlim instances`). "
                     f"unlim said: {err.strip()}")
             raise RuntimeError(
                 f"the unlim daemon exited (code {_daemon.returncode}). "

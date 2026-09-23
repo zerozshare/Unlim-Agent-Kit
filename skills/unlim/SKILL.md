@@ -139,8 +139,9 @@ unlim commands        # the full list
 ```
 
 Add `--json` for machine-readable output. Exit codes: `0` ok, `1` refused,
-`2` usage, `3` nothing running, `4` no answer — branch on those rather than
-parsing the text.
+`2` usage, `3` nothing running (or SEVERAL — the message lists them, pick one
+with `--instance <pid|:port>` or `UNLIM_API_PORT`), `4` no answer — branch on
+those rather than parsing the text.
 
 This needs the local API, which comes up automatically. A run started with
 `--no-api` is deliberately unreachable, and so is one on a machine where

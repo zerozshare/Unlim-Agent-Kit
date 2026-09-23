@@ -112,10 +112,12 @@ started by hand, since core 1.5.80 serves the API from an ordinary `--now` /
 `--connect` and not only from `--daemon`. It starts `unlim --daemon` itself only
 when nothing is running at all.
 
-**`unlim` holds a machine-wide PID lock**, so if the desktop app is running it
-owns the process — it runs `--ipc`, whose API is private to the launcher, and
-these tools cannot reach it. You get a clear error saying so rather than a retry
-loop; quit the Unlim app first.
+**The desktop app is invisible to these tools on purpose.** Its core runs
+`--ipc`, whose API is private to the launcher, so it neither registers itself
+nor claims the endpoint record — and since core 1.5.82 there is no
+single-instance lock, so the server just starts its own `unlim --daemon`
+alongside the app when it needs one. When several instances are registered,
+aim at one with `UNLIM_API_PORT` (`unlim instances` lists them).
 
 The server sets `UNLIM_NO_REPORT=1` on any instance it starts itself. A tunnel
 you started by hand keeps whatever telemetry setting it was launched with — set
