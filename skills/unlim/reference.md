@@ -10,8 +10,9 @@ assume it does not exist rather than guessing — `unlim --help` is the authorit
 | `unlim --now <ports>` | Host: share local ports. Prints the key + QR. |
 | `unlim --connect <key>` | Client: connect to a key or invite URL. |
 | `unlim <key>` | Same as `--connect`. |
-| `unlim -S [-t <name>] [-d] <program>` | Start a shared terminal session. `-t` names it, `-d` detaches. Both go AFTER `-S`. |
-| `unlim -ls` | List background sessions. |
+| `unlim -S [-t <name>] [-d] [--local] [-L] [program]` | Start a terminal session: published (a key) unless `--local` (this machine only). `-t` names it, `-d` detaches, `-L` keeps a log on disk. All go AFTER `-S`; no program = your shell. |
+| `unlim -ls [--json]` | List background sessions (share, state attached/detached). |
+| `unlim term show\|type\|key\|wait\|detach\|end\|log\|rename <name> …` | Drive a session from outside without attaching (see SKILL.md). `--json` for scripts. |
 | `unlim -R [name\|key]` | Attach to a live session, or join a remote one by key. **If the name is not live — or no name is given and none exist — it CREATES and publishes a new $SHELL session** (`screen -R` semantics). Run `unlim -ls` first. |
 | `unlim -kill <name>` | End a session. `--all` ends every one. |
 | `unlim --profile create\|load` | Create or load a port profile. |
@@ -169,6 +170,9 @@ The port actually bound is recorded in `~/.unlimited/api_endpoint` (mode 0600):
 
 Read that rather than assuming 9800 — 9800 may be taken, in which case the
 instance binds elsewhere and says so on stderr. `UNLIM_API_PORT` overrides.
+MCP requires a valid loopback endpoint record or an explicit loopback port.
+Without a record it starts a daemon and waits for the recorded endpoint; it
+does not send the API token to an assumed default port.
 Since 1.5.82 several instances can run at once: each one registers
 `~/.unlimited/instances/<pid>.json` (`unlim instances` lists the live ones),
 while the single `api_endpoint` record is claimed by whoever got port 9800 —
@@ -272,12 +276,8 @@ refused reports the reason (`EUNL-401`) rather than hanging.
 | `no ports received from host` | The host advertised no ports (app-only). |
 | `binary crashed` / non-zero exit | Report it; do not retry in a loop. |
 
-## Privacy and telemetry
+## Telemetry
 
-The core reports an anonymous NAT-traversal outcome (NAT type, failure bucket,
-version) to the signaling server so the maintainers can see where traversal
-fails. It carries no addresses, no keys and no identity.
-
-Set `UNLIM_NO_REPORT=1` to opt a run out entirely — nothing is sent and nothing
-is queued. **Automated runs, CI and test harnesses should set it**, so machine
-so test and CI traffic is excluded from the usage stats.
+Set `UNLIM_NO_REPORT=1` to opt a run out of the anonymous connection report —
+nothing is sent and nothing is queued. **Automated runs, CI and test harnesses
+should set it**, so test and CI traffic is excluded from the usage stats.
